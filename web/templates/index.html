@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DP-Advice Dashboard | NIST SP 800-226 & W3C Privacy Principles</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">DP</div>
+      <div>
+        <h1>DP-Advice Security Framework</h1>
+        <div class="subtitle">Interception Engine with LispWorks Defadvice Combinators, NIST SP 800-226 & W3C Privacy Principles</div>
+      </div>
+    </div>
+    <div class="badge-row" style="display: flex; align-items: center; gap: 0.75rem;">
+      <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-226.pdf" target="_blank" class="badge" style="text-decoration: none;" title="NIST SP 800-226 Guidelines for Evaluating Differential Privacy Guarantees">NIST SP 800-226</a>
+      <a href="https://www.w3.org/TR/privacy-principles/" target="_blank" class="badge badge-purple" style="text-decoration: none;" title="W3C Privacy Principles Statement">W3C Privacy Principles</a>
+      <button id="theme-toggle-btn" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">☀️ Light Mode</button>
+    </div>
+  </header>
+
+  <div class="grid-main">
+    <!-- Browser-session Privacy Accountant Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          Session Privacy Accountant
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <select id="select-budget-envelope" style="padding: 0.35rem 0.5rem; font-size: 0.75rem; border-radius: 6px; background: rgba(15,23,42,0.8); border: 1px solid var(--panel-border); color: var(--text-main);">
+            <option value="1.0">Envelope: ε = 1.0</option>
+            <option value="5.0" selected>Envelope: ε = 5.0 (Default)</option>
+            <option value="10.0">Envelope: ε = 10.0</option>
+            <option value="20.0">Envelope: ε = 20.0 (High Cap)</option>
+          </select>
+          <button id="reset-budget-btn" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Reset Budget</button>
+        </div>
+      </div>
+
+      <div class="accountant-metrics">
+        <div class="metric-box">
+          <div class="metric-val" id="metric-consumed">0.000</div>
+          <div class="metric-lbl">Consumed <span class="tex-render" data-tex="\mathcal{E}"></span></div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metric-remaining">5.000</div>
+          <div class="metric-lbl">Remaining <span class="tex-render" data-tex="\mathcal{E}"></span></div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metric-queries">0</div>
+          <div class="metric-lbl">Executed Queries</div>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-label-row">
+          <span>Sequential Composition Accounting (<span class="tex-render" data-tex="\sum_{i=1}^k \epsilon_i \le \mathcal{E}_{\max}"></span>)</span>
+          <span id="progress-percent-lbl">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive DP Query Sandbox with Multi-Mechanism Selection -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          DP Multi-Mechanism Sandbox
+        </div>
+      </div>
+
+      <form id="query-form" class="form-grid">
+        <div class="form-group full">
+          <label for="select-mechanism">Select DP Mechanism (IBM diffprivlib):</label>
+          <select id="select-mechanism">
+            <option value="laplace">Laplace Mechanism (pure ε-DP, continuous)</option>
+            <option value="gaussian">Analytic Gaussian Mechanism ((ε, δ)-DP)</option>
+            <option value="geometric">Geometric Mechanism (pure ε-DP, integers)</option>
+            <option value="snapping">Snapping Mechanism (pure ε-DP, Mironov 2012)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-val">Raw Input Value (<span class="tex-render" data-tex="x_{raw}"></span>)</label>
+          <input type="number" step="any" id="inp-val" value="42.0" required>
+        </div>
+        <div class="form-group">
+          <label for="inp-eps">Query Privacy Budget (<span class="tex-render" data-tex="\epsilon"></span>)</label>
+          <input type="number" step="any" id="inp-eps" value="1.0" required>
+        </div>
+        <div class="form-group" id="group-delta" style="display: none;">
+          <label for="inp-delta">Delta Privacy Parameter (<span class="tex-render" data-tex="\delta"></span>)</label>
+          <input type="number" step="any" id="inp-delta" value="0.000001">
+        </div>
+        <div class="form-group">
+          <label for="inp-lower">Lower Bound (<span class="tex-render" data-tex="L"></span>)</label>
+          <input type="number" step="any" id="inp-lower" value="0.0" required>
+        </div>
+        <div class="form-group">
+          <label for="inp-upper">Upper Bound (<span class="tex-render" data-tex="U"></span>)</label>
+          <input type="number" step="any" id="inp-upper" value="100.0" required>
+        </div>
+        <div class="form-group">
+          <label for="inp-n">Dataset Size (<span class="tex-render" data-tex="n"></span> samples)</label>
+          <input type="number" id="inp-n" min="1" placeholder="Optional; only if n is public">
+        </div>
+        <div class="form-group">
+          <label for="inp-seed">PRNG Seed</label>
+          <input type="number" id="inp-seed" min="1" placeholder="Optional; reuse is blocked">
+        </div>
+
+        <div class="form-group full btn-row">
+          <button type="submit" class="btn btn-primary">Execute Intercepted Query</button>
+          <button type="button" id="btn-trigger-exhaust" class="btn btn-secondary" title="Runs real queries, each asking for slightly more than is affordable, until the session accountant refuses one">Request More Than the Remaining Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mathematical Formula & Instantized Calculations Card -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+        Mathematical Formulas & Individual Calculations
+      </div>
+      <span class="badge" id="mechanism-badge-label">Laplace Mechanism Active</span>
+    </div>
+
+    <div class="formula-grid">
+      <div class="formula-card">
+        <div class="formula-title">1. Sensitivity & Data Clamping</div>
+        <div class="formula-math tex-render-display" data-tex="\Delta f = U - L, \quad x_{\text{clamped}} = \min(U, \max(L, x))"></div>
+        <div class="formula-sub" id="calc-clamping-sub">Run a query to view instantiated calculation</div>
+      </div>
+
+      <div class="formula-card">
+        <div class="formula-title" id="formula-param-title">2. Mechanism Noise Scale Parameter</div>
+        <div class="formula-math tex-render-display" id="math-scale-box" data-tex="b = \frac{\Delta f}{\epsilon} = \frac{|U - L|}{\epsilon}"></div>
+        <div class="formula-sub" id="calc-scale-sub">Run a query to view instantiated calculation</div>
+      </div>
+
+      <div class="formula-card">
+        <div class="formula-title" id="formula-mechanism-title">3. Mechanism Noisy Output Generation</div>
+        <div class="formula-math tex-render-display" id="math-laplace-box" data-tex="\tilde{y} = x_{\text{clamped}} + \text{Laplace}\left(0, b\right)"></div>
+        <div class="formula-sub" id="calc-laplace-sub">Run a query to view instantiated calculation</div>
+      </div>
+
+      <div class="formula-card">
+        <div class="formula-title">4. Output Rounding</div>
+        <div class="formula-math tex-render-display" id="math-rounding-box" data-tex="\tilde{y}_{\text{rounded}} = \text{round}\left(\frac{\tilde{y}}{2^{-p}}\right) \cdot 2^{-p}, \quad p = 40"></div>
+        <div class="formula-sub" id="calc-rounding-sub">Step 2^-40. A coarsening step only; not a floating-point attack mitigation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Upload & Analysis Card -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        Static Analysis of DP Python Code
+      </div>
+      <div>
+        <label for="file-upload-input" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; margin: 0;">
+          Upload .py File
+        </label>
+        <input type="file" id="file-upload-input" accept=".py" style="display: none;">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 1rem;">
+      <label for="code-editor">Python Source Code (IBM diffprivlib, OpenDP, PyDP, NumPy noise):</label>
+      <p style="color:var(--text-muted);font-size:.85rem">Static analysis only: submitted Python source is never executed. The linter is heuristic; no findings does not mean the code is private.</p>
+      <div class="editor-container">
+        <div class="line-numbers" id="line-numbers">1</div>
+        <textarea id="code-editor" class="code-textarea" rows="10" wrap="off" spellcheck="false">import diffprivlib.mechanisms as dp_mech
+import pandas as pd
+
+# 1. Query Laplace mechanism
+mech = dp_mech.Laplace(epsilon=1.0, sensitivity=1.0)
+res1 = mech.randomise(10.0)
+print("Laplace output:", res1)
+</textarea>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom: 1rem;">
+      <button id="btn-analyze-code" class="btn btn-primary">Analyze Code (Static)</button>
+      <button id="btn-load-valid-sample" class="btn btn-secondary">Load Clean Sample</button>
+      <button id="btn-load-vulnerable-sample" class="btn btn-secondary">Load Flawed Sample</button>
+    </div>
+
+    <!-- Results Panel for Code Analysis -->
+    <div id="code-analysis-results" style="display: none;">
+      <div id="result-banner" class="result-banner PASSED">
+        <div id="result-status" style="font-weight: 700;">VERDICT: PASSED</div>
+        <div id="result-summary-text" style="opacity: 0.9;">Code passed static AST inspection cleanly.</div>
+      </div>
+
+      <div class="subcard-title">Static AST Linter Findings</div>
+      <div id="static-findings-list" style="margin-bottom: 1rem;"></div>
+
+      <div class="subcard-title">Analysis notes</div>
+      <div id="dynamic-stdout-container" class="terminal-output"></div>
+    </div>
+  </div>
+
+  <!-- Advice Pipeline Interception Flow Visualizer -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Advice Execution Pipeline Visualizer
+      </div>
+    </div>
+
+    <div class="pipeline-flow" id="pipeline-flow-container">
+      <!-- Steps rendered dynamically via app.js -->
+      <div class="pipeline-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">:before advice 1: parameter validation</div>
+          <div class="step-detail">Checks <span class="tex-render" data-tex="\epsilon \in (0, \epsilon_{\max}]"></span>, <span class="tex-render" data-tex="\delta \le 1/n^2"></span> when n is given, and seed reuse.</div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">:before advice 2: budget reservation</div>
+          <div class="step-detail">Reserves the query's budget from the session accountant; refunded if the mechanism fails.</div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Target Mechanism Execution</div>
+          <div class="step-detail">The selected IBM diffprivlib mechanism.</div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">:after advice: output rounding and audit</div>
+          <div class="step-detail">Rounds float output and adds a temporary, browser-session history entry.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance Audit Log Table -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Session Query History (temporary demo data)
+      </div>
+      <span class="badge" style="font-size: 0.7rem; padding: 0.25rem 0.6rem;">Recent 5 Log Entries</span>
+    </div>
+
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Target Function</th>
+          <th>Consumed <span class="tex-render" data-tex="\epsilon"></span></th>
+          <th>Dataset Size</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="log-table-body">
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-muted);">No query history yet. Run a query to add a temporary session entry.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Authoritative Regulatory & Standard References Card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        Authoritative Regulatory & Standard References
+      </div>
+    </div>
+    <div class="ref-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div class="ref-box" style="background: rgba(10, 15, 29, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1rem;">
+        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; color: #a5b4fc;">
+          <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-226.pdf" target="_blank" style="color: inherit; text-decoration: underline;">NIST Special Publication 800-226</a>
+        </div>
+        <div style="font-size: 0.82rem; color: var(--text-muted);">
+          <i>Guidelines for Evaluating Differential Privacy Guarantees</i> (March 2025). Guidance on evaluating differential privacy guarantees: privacy parameters ε and δ, units of privacy, mechanisms, and deployment hazards. It gives no fixed numeric limits; the thresholds used here are DP-Advice defaults.
+        </div>
+      </div>
+      <div class="ref-box" style="background: rgba(10, 15, 29, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1rem;">
+        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; color: #c084fc;">
+          <a href="https://www.w3.org/TR/privacy-principles/" target="_blank" style="color: inherit; text-decoration: underline;">W3C Privacy Principles Statement</a>
+        </div>
+        <div style="font-size: 0.82rem; color: var(--text-muted);">
+          W3C Statement (May 2025) covering Data Minimization (§2.2), De-identified Data (§2.6) and Transparency (§2.11). It does not address differential privacy directly; DP-Advice draws on it for general principles only.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

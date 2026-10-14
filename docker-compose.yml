@@ -1,0 +1,15 @@
+services:
+  dp-advice-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dp_advice_web_ui_new
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - PORT=8000
+    volumes:
+      - ./audit_logs:/app/audit_logs
+    command: sh -c "pytest -v && python web/app.py"

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: dp-advice-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./dp-advice-api/Dockerfile
+    dockerContext: ./dp-advice-api
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://privability.works,https://www.privability.works
